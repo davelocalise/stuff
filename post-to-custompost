@@ -1,4 +1,3 @@
-// drop this into functions.php to covnert draft posts in the 'mp' category into micropost custom post type
 
 function convert_drafts_to_microposts() {
     // Query for draft posts in the 'mp' category
@@ -22,7 +21,7 @@ function convert_drafts_to_microposts() {
             // Create a new micropost
             $micropost_id = wp_insert_post([
                 'post_type'    => 'micropost',
-                'post_status'  => 'draft',
+                'post_status'  => 'publish',
                 'post_title'   => get_the_title(),
                 'post_content' => $original_post_content,
             ]);
@@ -30,6 +29,8 @@ function convert_drafts_to_microposts() {
             if (!is_wp_error($micropost_id)) {
                 // Assign the same tags to the new micropost
                 wp_set_post_tags($micropost_id, $original_post_tags, false);
+				// Delete the original post
+                wp_delete_post($original_post_id, true);
             } else {
                 error_log('Error creating micropost: ' . $micropost_id->get_error_message());
             }
