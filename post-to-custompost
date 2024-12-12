@@ -1,0 +1,42 @@
+// drop this into functions.php to covnert draft posts in the 'mp' category into micropost custom post type
+
+function convert_drafts_to_microposts() {
+    // Query for draft posts in the 'mp' category
+    $args = [
+        'post_status'    => 'draft',
+        'category_name'  => 'mp',
+        'posts_per_page' => -1, // Get all matching posts
+    ];
+
+    $query = new WP_Query($args);
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+
+            // Get the current post's data
+            $original_post_id = get_the_ID();
+            $original_post_content = get_the_content();
+            $original_post_tags = wp_get_post_tags($original_post_id, ['fields' => 'names']);
+
+            // Create a new micropost
+            $micropost_id = wp_insert_post([
+                'post_type'    => 'micropost',
+                'post_status'  => 'draft',
+                'post_title'   => get_the_title(),
+                'post_content' => $original_post_content,
+            ]);
+
+            if (!is_wp_error($micropost_id)) {
+                // Assign the same tags to the new micropost
+                wp_set_post_tags($micropost_id, $original_post_tags, false);
+            } else {
+                error_log('Error creating micropost: ' . $micropost_id->get_error_message());
+            }
+        }
+        wp_reset_postdata();
+    }
+}
+
+// Run the function via an admin action hook
+add_action('admin_init', 'convert_drafts_to_microposts');
